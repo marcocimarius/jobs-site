@@ -9,7 +9,7 @@ if(adminModal) {
         
         const modalInputId = document.getElementById('utilizator_id');
         const modalTitle = document.getElementById('adminModalLabel');
-        const question = document.getElementById('question');
+        const question = document.getElementById('questioon');
 
         modalInputId.value = user_id;
         modalTitle.textContent = `Make ${username} administrator`;

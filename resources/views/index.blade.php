@@ -190,118 +190,126 @@
                     </div>
                 </div>
             </div>
-        
-            <br>
-            @if ($posts->isNotEmpty())     
-                <span>{{$posts->links("pagination::bootstrap-5")}}</span>       
-                @foreach ($posts as $post)
-                    @php
-                        $totall = 0;
-                    @endphp
-                        <div class="p-4 p-md-5 mb-4 text-white rounded bg-dark ">
-                            <div class="d-flex flex-row justify-content-between">
-                                <div class="col-md-6 px-0 flex-column">
-                                    <h1 class="display-4 fst-italic">{{$post->title}}</h1>
-                                    <p class="lead my-3">Author: {{$post->author}}</p>
-                                    <div class="mb-1 text-muted">{{$post->upload_date}}</div>
-                                    <p class="lead mb-0"><a href="/thread/{{$post->id}}" class="text-white fw-bold">Continue reading...</a></p>
-                                    @if(session()->has('id') && session('role') == 'admin')
-                                        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#deleteModal1" data-bs-whatever="{{$post->id}}">Delete post</button>
-                                    @endif
-                                    @php
-                                        $role = '';
-                                        foreach ($users as $user) {
-                                            if($user->id == $post->utilizators_id) {
-                                                $role = $user->role;
-                                                break;
-                                            }
-                                        }
-                                    @endphp
-                                    @if(session()->has('id') && session('role') == 'admin' && $role != 'admin')
-                                        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#banModall" data-bs-whatever="{{$post->id}}" data-bs-user="{{$user->id}}" data-bs-author="{{$post->author}}">Ban author</button>
-                                    @endif
-                                    
-                                </div>
-                                <div class="col-auto mx-auto my-auto"> 
-                                    <img src="{{url('/posts_images/' . $post->photo)}}" class="img-thumbnail" style="width:450px; max-height:200px; object-fit:cover;" alt="post-image">
-                                    @foreach ($nrComments as $comment)
-                                        @if($comment->aid == $post->id)
-                                            @php
-                                                $totall += $comment->cnr; 
-                                            @endphp
-                                        @endif
-                                    @endforeach
-                                    @foreach ($nrReplies as $reply)
-                                        @if ($reply->aid == $post->id)
-                                            @php
-                                                $totall += $reply->rnr;
-                                            @endphp
-                                        @endif
-                                    @endforeach
-                                    <div class="my-auto text-muted">Total comments: {{$totall}}</div>                          
-                                </div>
-                            </div>             
+            
+            {{-- <div class="mt-2">
+                <span>{{$posts->links("pagination::bootstrap-5")}}</span>
+            </div> --}}
+
+            {{-- Modal --}}
+            <div class="modal fade" id="banModall" tabindex="-1" aria-labelledby="banModalLabel2" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="banModalLabel2">Ban user</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                            {{-- Modal --}}
-                            <div class="modal fade" id="banModall" tabindex="-1" aria-labelledby="banModalLabel2" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="banModalLabel2">Ban user</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <h3>Are you sure you want to ban this user?</h3>
-                                            <form action="/ban_post1" method="POST">
-                                                @method('PUT')
-                                                @csrf                    
-                                                <input type="hidden" name="banned_user_id" id="banned_user_id">          
-                                                <input type="hidden" name="articol_id" id="banned_from_post_id">                
-                                                <input type="hidden" name="author" id="banned_author">                
-                                                <select name="ban" class="form-select form-select-lg mb-3" aria-label=".form-select-lg example">
-                                                    <option value="1" selected>Ban for 30 minutes</option>
-                                                    <option value="2">Ban for 1 hour</option>
-                                                    <option value="3">Ban for 2 hours</option>
-                                                    <option value="4">Ban for 1 day</option>
-                                                    <option value="5">Ban for 2 days</option>
-                                                    <option value="6">Ban for 1 week</option>
-                                                    <option value="7">Ban for 1 month</option>
-                                                    <option value="8">Ban for 1 year</option>
-                                                    <option value="9">Ban for 10 years</option>
-                                                </select> 
-                                                <button type="submit" class="btn btn-danger mt-3" name="submit">Ban</button>                  
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                    {{-- Modal --}}
-                    <div class="modal fade" id="deleteModal1" tabindex="-1" aria-labelledby="deleteModalLabel1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="deleteModalLabel1">Delete Thread </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <h3>Are you sure you want to delete this thread?</h3>
-                                    <form action="/delete_thread" method="POST">
-                                        @method('DELETE')
-                                        @csrf
-                                        <input type="hidden" name="id" id="inputId">                                   
-                                        <button type="submit" class=" btn btn-danger mt-3" name="submit">Delete</button>                  
-                                    </form>
-                                </div>
-                            </div>
+                        <div class="modal-body">
+                            <h3>Are you sure you want to ban this user?</h3>
+                            <form action="/ban_post1" method="POST">
+                                @method('PUT')
+                                @csrf                    
+                                <input type="hidden" name="banned_user_id" id="banned_user_id">          
+                                <input type="hidden" name="articol_id" id="banned_from_post_id">                
+                                <input type="hidden" name="author" id="banned_author">                
+                                <select name="ban" class="form-select form-select-lg mb-3" aria-label=".form-select-lg example">
+                                    <option value="1" selected>Ban for 30 minutes</option>
+                                    <option value="2">Ban for 1 hour</option>
+                                    <option value="3">Ban for 2 hours</option>
+                                    <option value="4">Ban for 1 day</option>
+                                    <option value="5">Ban for 2 days</option>
+                                    <option value="6">Ban for 1 week</option>
+                                    <option value="7">Ban for 1 month</option>
+                                    <option value="8">Ban for 1 year</option>
+                                    <option value="9">Ban for 10 years</option>
+                                </select> 
+                                <button type="submit" class="btn btn-danger mt-3" name="submit">Ban</button>                  
+                            </form>
                         </div>
                     </div>
-                @endforeach
-                <span>{{$posts->links("pagination::bootstrap-5")}}</span>  
-            @else
-                <div class="text-danger">
-                    <h1>No post found with this name</h1>
                 </div>
-            @endif
+            </div>
+    {{-- Modal --}}
+    <div class="modal fade" id="deleteModal1" tabindex="-1" aria-labelledby="deleteModalLabel1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel1">Delete Post </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h3>Are you sure you want to delete this post?</h3>
+                    <form action="/delete_thread" method="POST">
+                        @method('DELETE')
+                        @csrf
+                        <input type="hidden" name="id" id="inputId">                                   
+                        <button type="submit" class=" btn btn-danger mt-3" name="submit">Delete</button>                  
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <br>
+                @if ($posts->isNotEmpty())
+                    @foreach ($posts as $post)
+                        @php
+                            $totall = 0;
+                        @endphp
+                            <div class="p-4 p-md-5 mb-4 text-white rounded bg-dark ">
+                                <div class="d-flex flex-row justify-content-between">
+                                    <div class="col-md-6 px-0 flex-column">
+                                        <h1 class="display-4 fst-italic">{{$post->title}}</h1>
+                                        <p class="lead my-3">Author: <a class="text-white" href="/account/{{$post->utilizators_id}}">{{$post->author}}</a></p>
+                                        <div class="mb-1 text-muted">{{$post->upload_date}}</div>
+                                        <p class="lead mb-0"><a href="/thread/{{$post->id}}" class="text-white fw-bold">Continue reading...</a></p>
+                                        @if(session()->has('id') && session('role') == 'admin')
+                                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#deleteModal1" data-bs-whatever="{{$post->id}}">Delete post</button>
+                                        @endif
+                                        @php
+                                            $role = '';
+                                            foreach ($users as $user) {
+                                                if($user->id == $post->utilizators_id) {
+                                                    $role = $user->role;
+                                                    break;
+                                                }
+                                            }
+                                        @endphp
+                                        @if(session()->has('id') && session('role') == 'admin' && $role != 'admin')
+                                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#banModall" data-bs-whatever="{{$post->id}}" data-bs-user="{{$user->id}}" data-bs-author="{{$post->author}}">Ban author</button>
+                                        @endif
+                                        
+                                    </div>
+                                    <div class="col-auto mx-auto my-auto"> 
+                                        <img src="{{url('/posts_images/' . $post->photo)}}" class="img-thumbnail" style="width:450px; max-height:200px; object-fit:cover;" alt="post-image">
+                                        @foreach ($nrComments as $comment)
+                                            @if($comment->aid == $post->id)
+                                                @php
+                                                    $totall += $comment->cnr; 
+                                                @endphp
+                                            @endif
+                                        @endforeach
+                                        @foreach ($nrReplies as $reply)
+                                            @if ($reply->aid == $post->id)
+                                                @php
+                                                    $totall += $reply->rnr;
+                                                @endphp
+                                            @endif
+                                        @endforeach
+                                        <div class="my-auto text-muted">Total comments: {{$totall}}</div>                          
+                                    </div>
+                                </div>             
+                            </div>
+                    @endforeach
+                    <span>{{$posts->links("pagination::bootstrap-5")}}</span>
+                @else
+                    <div class="text-danger">
+                        <h1>No post found with this name</h1>
+                    </div>
+                @endif
+
+            {{-- @else
+                <span>{{$posts->links("pagination::bootstrap-5")}}</span>  
+            @endif --}}
         </div>
     </main>
     

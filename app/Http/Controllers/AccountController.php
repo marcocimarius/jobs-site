@@ -19,16 +19,20 @@ class AccountController extends Controller
         $threads = Articol::where('utilizators_id', '=', $id)->paginate(5, ['*'], 'posts');
         $comments = Comment::where('user_id', '=', $id)->paginate(5, ['*'], 'comments');
         $replies = Reply::where('user_id', '=', $id)->paginate(5, ['*'], 'replies');
-        $nrPostari = DB::table('articols')->join('utilizators', 'articols.utilizators_id', '=', 'utilizators.id')->select(DB::raw('utilizators.id as uid, count(*) as pnr'))->groupBy('utilizators.id')->get();
+        $nrPostari = DB::table('articols')->join('utilizators', 'articols.utilizators_id', '=', 'utilizators.id')->select(DB::raw('utilizators.id as uid, count(*) as pnr'))->where('utilizators.id', '=', $id)->groupBy('utilizators.id')->get();
         $nrComments = DB::table('comments')->join('utilizators', 'comments.user_id', '=', 'utilizators.id')->select(DB::raw('utilizators.id as uid1, count(*) as cnr'))->groupBy('utilizators.id')->get();
         $nrReplies = DB::table('replies')->join('utilizators', 'replies.user_id', '=', 'utilizators.id')->select(DB::raw('utilizators.id as uid2, count(*) as rnr'))->groupBy('utilizators.id')->get();
+        $nrFollowing = DB::table('follows')->select(DB::raw('count(*) as fnr, subscriber_id as uid3'))->where('subscriber_id', '=', $id)->groupBy('subscriber_id')->get();
+        $nrFollowers = DB::table('follows')->select(DB::raw('count(*) as fsnr'))->where('followed_id', '=', $id)->groupBy('followed_id')->get();
         $idd = session('id');
         $notifications = Notification::where('recipient_id', '=', $idd)->orderBy('id', 'desc')->get();
         $notificationsNumber = DB::table('notifications')->select(DB::raw('count(*) as nnr'))->where([['recipient_id', '=', $idd], ['was_seen', '=', 0]])->get();
         $isFollowing = Follow::where([['followed_id', '=', $id], ['subscriber_id', '=', $idd]])->get();
         $contentCreators = DB::table('utilizators')->join('follows', 'follows.followed_id', '=', 'utilizators.id')->select(DB::raw('utilizators.login as login, utilizators.id as id'))->where('follows.subscriber_id', '=', $id)->paginate(5, ['*'], 'contentCreators');
 
-        return view('account', ['id' => $user->id, 'login' => $user->login, 'email' => $user->email, 'photo' => $user->photo, 'role' => $user->role , 'threads' => $threads, 'comments' => $comments, 'replies' => $replies, 'nrPostari' => $nrPostari, 'nrComments' => $nrComments, 'nrReplies' => $nrReplies, 'register_date' => $user->created_at, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'isFollowing' => $isFollowing, 'contentCreators' => $contentCreators]);
+        return view('account', ['id' => $user->id, 'login' => $user->login, 'email' => $user->email, 'photo' => $user->photo, 'role' => $user->role , 'threads' => $threads, 'comments' => $comments, 'replies' => $replies, 
+            'nrPostari' => $nrPostari, 'nrComments' => $nrComments, 'nrReplies' => $nrReplies, 'register_date' => $user->created_at, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 
+            'isFollowing' => $isFollowing, 'contentCreators' => $contentCreators, 'nrFollowing' => $nrFollowing, 'bio' => $user->bio, 'nrFollowers' => $nrFollowers]);
     }
 
     public function show_update() {       
@@ -50,14 +54,14 @@ class AccountController extends Controller
             $login = $req -> login;
             $password = $req -> password;
             $passwordVerification = $req -> passwordVerification;
-            $email = $req -> email;
             $errors = "";
+            $idd = session('id');
+            $notifications = Notification::where('recipient_id', '=', $idd)->orderBy('id', 'desc')->get();
+            $notificationsNumber = DB::table('notifications')->select(DB::raw('count(*) as nnr'))->where([['recipient_id', '=', $idd], ['was_seen', '=', 0]])->get();
 
             if($login != "") {
                 if($password != "") {
                     if($passwordVerification != "") {
-                        if($email != "") {
-                             if($req->hasFile('image')) {
                                 $passwordLength = Str::length($password);
                                 if($passwordLength >= 8) {
                                     $capitalLetters = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M'];
@@ -83,7 +87,7 @@ class AccountController extends Controller
                                     }
                                     if($containsCapitalLetters == false) {
                                         $errors = "4";
-                                        return view('updateUser', ['errors' => $errors]);
+                                        return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                                     }
                         
                                     //verify for numbers
@@ -102,7 +106,7 @@ class AccountController extends Controller
                                     }
                                     if($containsNumbers == false) {
                                         $errors = "5";
-                                        return view('updateUser', ['errors' => $errors]);
+                                        return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                                     }
                         
                                     //verify for characters
@@ -121,7 +125,7 @@ class AccountController extends Controller
                                     }
                                     if($containsCharacters == false) {
                                         $errors = "6";
-                                        return view('updateUser', ['errors' => $errors]);
+                                        return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                                     }
 
                                     if($containsCapitalLetters == true && $containsNumbers == true && $containsCharacters == true) {
@@ -143,46 +147,14 @@ class AccountController extends Controller
                                             }                                         
                                         }
                                         if($loginExists == false) {                                           
-                                            $emailExists = true;
-                                            $users3 = Utilizator::all();
-                                            foreach($users3 as $user3) {
-                                                if($user3->email == $email) {
-                                                    if($user3->id == $user->id) {
-                                                        $emailExists = false;
-                                                        break;
-                                                    }
-                                                    else {
-                                                        $emailExists = true;
-                                                        break;
-                                                    }
-                                                }
-                                                else {
-                                                    $emailExists = false;
-                                                } 
-                                            }
-                                            if($emailExists == false) {
                                                 if($password == $passwordVerification) {
-                                                    unlink(public_path('images/' . $user->photo));
-                                                    $image = $req->file('image');
-                                                    $img_ext = $image->getClientOriginalExtension();
-                                                    if($img_ext == 'jpeg' || $img_ext == 'jpg') {
-                                                        $img_name = uniqid() . '.' . $img_ext;
-                                                        $img_folder = public_path('images/');
-                                                        $image->move($img_folder, $img_name);
-
-                                                        $user->photo = $img_name;
                                                         $user->login = $login;
-                                                        $user->email = $email;
                                                         $user->password = $password;
                                                         $user->role = session('role');
 
                                                         $user->save();
                                                         session()->pull('login');
-                                                        session()->pull('email');
-                                                        session()->pull('photo');
                                                         $req->session()->put('login', $login);
-                                                        $req->session()->put('email', $email);
-                                                        $req->session()->put('photo', $img_name);
 
                                                         $posts = Articol::where('utilizators_id', '=', session('id'))->get();
                                                         foreach($posts as $post) {
@@ -191,57 +163,36 @@ class AccountController extends Controller
                                                         }
 
                                                         return redirect('/account/' . session('id'));
-                                                    }
-                                                    else {
-                                                       $errors = "2";
-                                                        return view('updateUser', ['errors' => $errors]);
-                                                   }
                                                 }
                                                 else {
                                                     $errors = "7";
-                                                    return view('updateUser', ['errors' => $errors]);
+                                                    return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                                                 }
-                                            }
-                                           else {
-                                                $errors = "9";
-                                                return view('updateUser', ['errors' => $errors]);
-                                            }
                                         }
                                         else {
                                            $errors = "8";
-                                            return view('updateUser', ['errors' => $errors]);
+                                            return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                                         }
                                     }
                                 }
                                 else {
                                     $errors = "3";
-                                    return view('updateUser', ['errors' => $errors]);
-                                }    
-                             }
-                            else {
-                                $errors = "1";
-                                return view('updateUser', ['errors' => $errors]);
-                            }
-                            
-                        }
-                        else {
-                            $errors = "13";
-                            return view('updateUser', ['errors' => $errors]);
-                        }    
+                                    return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
+                                }     
                     }
                     else {
                         $errors = "12";
-                        return view('updateUser', ['errors' => $errors]);
+                        return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                     }   
                 }
                 else {
                     $errors = "11";
-                    return view('updateUser', ['errors' => $errors]);
+                    return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
                 }  
             }  
             else {
                 $errors = "10";
-                return view('updateUser', ['errors' => $errors]);
+                return view('updateUser', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber]);
             }   
         }  
         else {
@@ -280,5 +231,51 @@ class AccountController extends Controller
         $follow->delete();
 
         return redirect('/account/' . $followed_id);
+    }
+
+    public function add_bio(Request $req) {
+        $id = $req->user_id;
+        $bio = $req->bio;
+        $user = Utilizator::findOrFail($id);
+        $user->bio = $bio;
+        $user->save();
+
+        return redirect('/account/' . $id);
+    }
+
+    public function change_photo(Request $req) {
+        $id = $req->user_id;
+        $user = Utilizator::findOrFail($id);
+
+            if($req->hasFile('image')) {
+                $image = $req->file('image');
+                $img_ext = $image->getClientOriginalExtension();
+                if($img_ext == 'jpeg' || $img_ext == 'jpg') {
+                    unlink(public_path('images/' . $user->photo));
+                    $img_name = uniqid() . '.' . $img_ext;
+                    $img_folder = public_path('images/');
+                    $image->move($img_folder, $img_name);
+
+                    $user->photo = $img_name;
+                    $user->save();
+
+                    $notifications = Notification::where('user_id', '=', $id)->get();
+                    foreach($notifications as $notification) {
+                        $notification->image = $img_name;
+                        $notification->save();
+                    }
+
+                    session()->pull('photo');
+                    $req->session()->put('photo', $img_name);
+                }
+                else {
+                    return redirect('/account/' . $id);
+                }
+            }
+            else {
+                return redirect('/account/' . $id);
+            }
+        
+        return redirect('/account/' . $id);
     }
 }

@@ -16,6 +16,7 @@ Route::get('/create', [PostsController::class, 'show_create_thread']);
 Route::post('/create', [PostsController::class, 'create_thread']);
 Route::get('/update_thread', [PostsController::class, 'show_update_thread']);
 Route::put('/update_thread', [PostsController::class, 'update_thread']);
+Route::put('/change_post_photo', [PostsController::class, 'change_post_photo']);
 Route::delete('/delete_thread', [PostsController::class, 'delete_thread']);
 Route::delete('/destroy_thread', [PostsController::class, 'destroy_thread']);
 Route::delete('/delete_reply', [PostsController::class, 'delete_reply']);
@@ -29,28 +30,30 @@ Route::put('/ban_comment', [PostsController::class, 'ban_comment']);
 Route::put('/ban_reply', [PostsController::class, 'ban_reply']);
 Route::put('/ban_post1', [PostsController::class, 'ban_post1']);
 Route::put('/ban_post2', [PostsController::class, 'ban_post2']);
-
+Route::put('/edit_reply', [PostsController::class, 'edit_reply']);
+Route::put('/edit_comment', [PostsController::class, 'edit_comment']);
 Route::post('/signup', [AuthController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
-
 Route::get('/account/{id}', [AccountController::class, 'show']);
 Route::get('/update_account', [AccountController::class, 'show_update']);
 Route::put('/update_account', [AccountController::class, 'update']);
 Route::put('/make_admin', [AccountController::class, 'make_admin']);
+Route::put('/add_bio', [AccountController::class, 'add_bio']);
+Route::put('/change_photo', [AccountController::class, 'change_photo']);
 Route::post('/follow', [AccountController::class, 'follow']);
 Route::delete('/unfollow', [AccountController::class, 'unfollow']);
-
 Route::get('/logout', function() {
     if(session()->has('id')) {
         session()->pull('id');
         session()->pull('login');
-        session()->pull('email');
         session()->pull('role');
         session()->pull('photo');
         session()->pull('ban_until');
+        session()->pull('result');
     }
     return redirect('/');
 });
+
 Route::get('/signup', function() {
     if(session()->has('id')) {
         return redirect('/');

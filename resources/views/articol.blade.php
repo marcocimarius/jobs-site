@@ -64,14 +64,19 @@
                                             <span class="iconn">
                                                 @if (isset($notification->comment_id))
                                                     <a href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
-                                                        <img src="{{url('/images/' . $notification->image)}}" alt="profile_pic">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
                                                     </a>  
                                                 @endif
                                                 @if (isset($notification->reply_id))
                                                     <a href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
-                                                        <img src="{{url('/images/' . $notification->image)}}" alt="profile_pic">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
                                                     </a> 
-                                                @endif    
+                                                @endif  
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a href="/thread/{{$notification->post_id}}">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
+                                                    </a>
+                                                @endif  
                                             </span>
                                         </div>
                                         
@@ -87,6 +92,11 @@
                                                         <p class="text-dark">{{$notification->title}}</p>
                                                     </a>
                                                 @endif        
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}">
+                                                        <p class="text-dark">{{$notification->title}}</p>
+                                                    </a>
+                                                @endif 
                                             </div>
                                             <div class="sub_title">
                                                 @if (isset($notification->comment_id))
@@ -96,6 +106,11 @@
                                                 @endif 
                                                 @if (isset($notification->reply_id))
                                                     <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
+                                                        <p class="text-muted">{{$notification->creation_date}}</p>
+                                                    </a> 
+                                                @endif 
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}">
                                                         <p class="text-muted">{{$notification->creation_date}}</p>
                                                     </a> 
                                                 @endif 
@@ -112,7 +127,7 @@
 
                     <div class="dropdown text-end">
                         <a href="#" class="d-block text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="{{url('/images/' . session('photo'))}}" alt="mdo" width="32" height="32" class="rounded-circle">
+                            <img src="{{url('/images/' . session('photo'))}}" alt="mdo" width="32" height="32" class="rounded-circle" style="object-fit: cover;">
                         </a>
                         <ul class="dropdown-menu text-small" aria-labelledby="dropdownUser1" style="">
                             <li><a class="dropdown-item" href="/account/{{session('id')}}">Profile</a></li>
@@ -146,6 +161,30 @@
             @break
     @endswitch
 
+    {{-- Modal --}}
+    <div class="modal fade" id="changePhotoModal" tabindex="-1" aria-labelledby="changePhotoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePhotoModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="/change_post_photo" method="POST" enctype="multipart/form-data">
+                        @method('PUT')
+                        @csrf
+                        <input type="hidden" name="post_id" id="changePhotoInputId">
+                        <div class="mb-3">
+                            <label for="formFile" class="form-label">The image must have .jpg or .jpeg extensions only</label>
+                            <input class="form-control" type="file" id="formFile" name="image">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Change photo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="d-flex flex-row justify-content-between">
             <article class="blog-post">
@@ -154,16 +193,19 @@
                 <p>{!! nl2br(e($post->content)) !!}</p>
             </article>
             <div class="col-auto mx-auto my-auto"> 
-                <img src="{{url('/posts_images/' . $post->photo)}}" class="img-responsive" alt="post photo">
+                <img src="{{url('/posts_images/' . $post->photo)}}" class="img-thumbnail" style="max-width:450px; max-height:200px; object-fit:cover;" alt="post photo">
             </div>
         </div>
         <div class="d-flex flex-row border-bottom">
-             @if(session('id') == $post->utilizators_id)
+            @if(session('id') == $post->utilizators_id)
                 <form action="/update_thread" method="GET">
                     <input type="hidden" name="id" value="{{$post->id}}">
                     <input type="hidden" name="user_id" value="{{$post->utilizators_id}}">
                     <button type="submit" class="btn btn-primary mb-2">Update post</button>
                 </form>
+            @endif
+            @if(session('id') == $post->utilizators_id)
+                <button class="btn btn-primary mb-2 ms-2" data-bs-toggle="modal" data-bs-target="#changePhotoModal" data-bs-whatever="{{$post->id}}">Change post photo</button>
             @endif
             @if (session()->has('id') && session('role') == 'admin')
                 <button class="btn btn-primary ms-2 mb-2" data-bs-toggle="modal" data-bs-target="#deleteModal1" data-bs-whatever="{{$post->id}}">Delete post</button>
@@ -224,11 +266,11 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="deleteModalLabel1">Delete Thread </h5>
+                        <h5 class="modal-title" id="deleteModalLabel1">Delete Post </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <h3>Are you sure you want to delete this thread?</h3>
+                        <h3>Are you sure you want to delete this post?</h3>
                         <form action="/destroy_thread" method="POST">
                             @method('DELETE')
                             @csrf
@@ -277,30 +319,55 @@
         @switch(session()->has('id'))
             @case(true)
                 @foreach ($comments as $comment)    
-                           
                         @foreach($users as $user)
                             @if ($user->id == $comment->user_id)
                                 {{-- Comment --}}
                                 <div class="d-flex justify-content-start" id="{{$comment->id}}">
                                     <div>
                                         <a href="/account/{{$user->id}}">
-                                            <img src="{{url('/images/' . $user->photo)}}" alt="mdo" width="64" height="64" class="rounded-circle">                                           
+                                            <img src="{{url('/images/' . $user->photo)}}" alt="mdo" width="64" height="64" class="rounded-circle" style="object-fit: cover;">                                           
                                         </a>
                                     </div>
                                     <div>
-                                        <a href="/account/{{$user->id}}">
+                                        <a style="text-decoration: none;" href="/account/{{$user->id}}">
                                             <h5 class="mx-2 ms-4 text-dark">{{$comment->author}}</h5>
                                         </a>
                                         <p class="ms-4">{!! nl2br(e($comment->content)) !!}</p>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-start mb-3">
-                                    <div class="mx-5">
-                                        <small>Uploaded at: {{$comment->upload_date}}</small>
-                                    </div>
-                                    <div class="mt-none">
-                                        <button style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="{{$comment->id}}" data-bs-author="{{$comment->author}}" data-bs-content="{{$comment->content}}" data-bs-recipient_id={{$comment->user_id}}>Reply</button>
-                                    </div>
+                                    @if ($comment->edited == 0)
+                                        <div class="mx-5">
+                                            <small>Uploaded at: {{$comment->created_at}}</small>
+                                        </div>
+                                    @endif
+                                    @if ($comment->edited == 1)
+                                        <div class="mx-5">
+                                            <small>Edited at: {{$comment->updated_at}}</small>
+                                        </div>
+                                    @endif
+                                    @if (session('result') == 1)
+                                        <div class="mt-none">
+                                            <button style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="{{$comment->id}}" data-bs-author="{{$comment->author}}" data-bs-content="{{$comment->content}}" data-bs-recipient_id={{$comment->user_id}}>Reply</button>
+                                        </div>
+                                    @endif
+                                    @if (session('result') == 0)
+                                        <div class="mt-none">
+                                            <button disabled style="background: none; border: none; padding: none">Reply</button>
+                                        </div>
+                                    @endif
+                                    @if (session('result') == 1 && session('id') == $comment->user_id && $comment->edited == 0)
+                                        <div class="mt-none">
+                                            <button style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#editCommentModal" data-bs-whatever="{{$comment->id}}" data-bs-post_id="{{$comment->articol_id}}" data-bs-content="{{$comment->content}}">Edit</button>
+                                        </div>
+                                    @endif
+                                    @if (session('id') == $comment->user_id)
+                                        @if (session('result') == 0 || $comment->edited == 1)
+                                            <div class="mt-none">
+                                                <button disabled style="background: none; border: none; padding: none">Edit</button>
+                                            </div>
+                                        @endif
+                                    @endif
                                     @if (session()->has('id') && session('role') == 'admin')
                                         <div class="mt-none ms-2">
                                             <button class="text-danger" style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#deleteCommentModal" data-bs-articolId="{{$comment->articol_id}}" data-bs-commentId="{{$comment->id}}">Delete Comment</button>
@@ -311,6 +378,29 @@
                                              <button class="text-warning" style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#banModal" data-bs-articolId="{{$comment->articol_id}}" data-bs-commentId="{{$comment->id}}" data-bs-userBanned="{{$comment->user_id}}" data-bs-comment_author="{{$comment->author}}">Ban</button> 
                                         </div>
                                     @endif
+                                </div>
+
+                                {{-- Modal --}}
+                                <div class="modal fade" id="editCommentModal" tabindex="-1" aria-labelledby="editCommentModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="editCommentModalLabel">Edit Comment </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <h3>You can edit a comment only once</h3>
+                                                <form action="/edit_comment" method="POST">
+                                                    @method('PUT')
+                                                    @csrf                              
+                                                    <input type="hidden" name="comment_id" id="edit_comment_id">                                   
+                                                    <input type="hidden" name="articol_id" id="edit_comment_post_id">  
+                                                    <textarea class="form-control" placeholder="Leave a new comment here" name="content" id="edit_comment_content" style="height: 3cm" required></textarea>                                 
+                                                    <button type="submit" class="btn btn-danger mt-3" name="submit">Edit</button>                  
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {{-- Modal --}}
@@ -414,6 +504,8 @@
                             @endif    
                         @endforeach 
 
+                                
+
                     @foreach($replies as $reply)  
                         @if($comment->id == $reply->comment_id)
                             @foreach($users as $user)
@@ -423,11 +515,11 @@
                                         <div class="d-flex justify-content-start">
                                             <div>
                                                 <a href="/account/{{$reply->user_id}}">
-                                                    <img src="{{url('/images/' . $user->photo)}}" alt="mdo" width="64" height="64" class="rounded-circle">                                           
+                                                    <img src="{{url('/images/' . $user->photo)}}" alt="mdo" width="64" height="64" class="rounded-circle" style="object-fit: cover;">                                           
                                                 </a>
                                             </div>
                                             <div>
-                                                <a href="/account/{{$user->id}}">
+                                                <a style="text-decoration: none;" href="/account/{{$user->id}}">
                                                     <h5 class="mx-2 ms-4 text-dark">{{$reply->author}}</h5>
                                                 </a>
 
@@ -438,12 +530,38 @@
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-start mb-3">
-                                            <div class="mx-5">
-                                                <small>Uploaded at: {{$reply->upload_date}}</small>
-                                            </div>
-                                            <div class="mt-none">
-                                                <button style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#exampleModal2" data-bs-whatever="{{$comment->id}}" data-bs-author="{{$reply->author}}" data-bs-content="{{$reply->content}}" data-bs-recipient_id={{$reply->user_id}} data-bs-main_reply_id={{$reply->id}}>Reply</button>
-                                            </div>
+                                            @if ($reply->edited == 0)
+                                                <div class="mx-5">
+                                                    <small>Uploaded at: {{$reply->created_at}}</small>
+                                                </div>
+                                            @endif
+                                            @if ($reply->edited == 1)
+                                                <div class="mx-5">
+                                                    <small>Edited at: {{$reply->updated_at}}</small>
+                                                </div>
+                                            @endif
+                                            @if (session('result') == 1)
+                                                <div class="mt-none">
+                                                    <button style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#exampleModal2" data-bs-whatever="{{$comment->id}}" data-bs-author="{{$reply->author}}" data-bs-content="{{$reply->content}}" data-bs-recipient_id={{$reply->user_id}} data-bs-main_reply_id={{$reply->id}} data-bs-isBanned={{$result}} data-bs-banDate={{session('ban_until')}}>Reply</button>
+                                                </div>
+                                            @endif
+                                            @if (session('result') == 0)
+                                                <div class="mt-none">
+                                                    <button disabled style="background: none; border: none; padding: none">Reply</button>
+                                                </div>
+                                            @endif
+                                            @if (session('result') == 1 && session('id') == $reply->user_id && $reply->edited == 0)
+                                                <div class="mt-none">
+                                                    <button style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#editReplyModal" data-bs-whatever="{{$reply->id}}" data-bs-post_id="{{$reply->articol_id}}" data-bs-content="{{$reply->content}}">Edit</button>
+                                                </div>
+                                            @endif
+                                            @if (session('id') == $reply->user_id)
+                                                @if (session('result') == 0 || $reply->edited == 1)
+                                                    <div class="mt-none">
+                                                        <button disabled style="background: none; border: none; padding: none">Edit</button>
+                                                    </div>
+                                                @endif
+                                            @endif
                                             @if (session()->has('id') && session('role') == 'admin')
                                                 <div class="mt-none ms-2">
                                                     <button class="text-danger" style="background: none; border: none; padding: none" data-bs-toggle="modal" data-bs-target="#deleteReplyModal" data-bs-articolId="{{$reply->articol_id}}" data-bs-replyId="{{$reply->id}}" data-bs-commentId="{{$reply->comment_id}}" data-bs-recipient="{{$reply->recipient}}" data-bs-user="{{$reply->user_id}}">Delete Reply</button>
@@ -490,7 +608,28 @@
                                                     </div>
                                                 </div>
                                             </div>
-
+                                            {{-- Modal --}}
+                                            <div class="modal fade" id="editReplyModal" tabindex="-1" aria-labelledby="editReplyModelLabel" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="editReplyModelLabel">Edit Reply</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <h3>You can edit a comment only once</h3>
+                                                            <form action="/edit_reply" method="POST">
+                                                                @method('PUT')
+                                                                @csrf
+                                                                <input type="hidden" name="reply_id" id="edit_reply_id">                                                                   
+                                                                <input type="hidden" name="post_id" id="edit_post_id">                                                                   
+                                                                <textarea class="form-control" placeholder="Leave a new reply here" name="content" style="height: 3cm" id="edit_reply_content" required></textarea>                               
+                                                                <button type="submit" class="btn btn-danger mt-3" name="submit">Edit</button>                  
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             {{-- Modal --}}
                                             <div class="modal fade" id="deleteReplyModal" tabindex="-1" aria-labelledby="deleteReplyModalLabel" aria-hidden="true">
                                                 <div class="modal-dialog">
@@ -537,23 +676,25 @@
                                                             <textarea class="form-control" id="previousTextarea2" readonly></textarea>
                                                         </div>
                                                     </form>
-                                                    <form action="/thread/{{$post->id}}" method="POST">
-                                                        @csrf
-                                                        <div class="form-floating">
-                                                            <input type="hidden" name="user_id" id="userId" value="{{session('id')}}">
-                                                            <input type="hidden" name="comment_id" id="commentId">
-                                                            <input type="hidden" name="post_id" value="{{$post->id}}">
-                                                            <input type="hidden" name="recipient_login" id="nameToDB">
-                                                            <input type="hidden" name="recipient_id" id="recipient_id2">
-                                                            <input type="hidden" name="main_reply_id" id="main_reply_id2">
-                                                            <textarea class="form-control" placeholder="Leave a reply here" id="floatingTextarea2" name="content" style="height: 3cm" required></textarea>
-                                                            <label for="floatingTextarea2">Reply</label>
-                                                            <div class="invalid-feedback">
-                                                                Please provide a valid comment
+                                                    {{-- @if ($result == 1) --}}
+                                                        <form action="/thread/{{$post->id}}" method="POST">
+                                                            @csrf
+                                                            <div class="form-floating">
+                                                                <input type="hidden" name="user_id" id="userId" value="{{session('id')}}">
+                                                                <input type="hidden" name="comment_id" id="commentId">
+                                                                <input type="hidden" name="post_id" value="{{$post->id}}">
+                                                                <input type="hidden" name="recipient_login" id="nameToDB">
+                                                                <input type="hidden" name="recipient_id" id="recipient_id2">
+                                                                <input type="hidden" name="main_reply_id" id="main_reply_id2">
+                                                                <textarea class="form-control" placeholder="Leave a reply here" id="contentTextarea" name="content" style="height: 3cm" required></textarea>
+                                                                <label for="floatingTextarea2">Reply</label>
+                                                                <div class="invalid-feedback">
+                                                                    Please provide a valid comment
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <button type="submit" class=" btn btn-primary mt-3" name="submit">Reply</button>                  
-                                                    </form>
+                                                            <button type="submit" class=" btn btn-primary mt-3" name="submit">Reply</button>                  
+                                                        </form>
+                                                    {{-- @endif --}}
                                                 </div>
                                             </div>
                                         </div>

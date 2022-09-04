@@ -19,7 +19,6 @@ class AuthController extends Controller
         $login = $req -> login;
         $password = $req -> password;
         $passwordVerification = $req -> passwordVerification;
-        $email = $req -> email;
         $encryptedPassword = "";
 
         $errors = "";
@@ -27,7 +26,6 @@ class AuthController extends Controller
         if($login != "") {
             if($password != "") {
                 if($passwordVerification != "") {
-                    if($email != "") {
                         if($req -> hasFile('image')) {
                             $image = $req -> file('image');
                             $imageExtension = $image -> getClientOriginalExtension();
@@ -118,21 +116,7 @@ class AuthController extends Controller
                                                 $errors = "8";
                                                 return view('signup', ['errors' => $errors]);
                                             }
-                
-                                            //verifying email
-                                            $emailExists = false;
-                                            foreach($users as $user) {
-                                                if($user -> email == $email) {
-                                                    $emailExists = true;
-                                                    break;
-                                                }
-                                            }
-                                            if($emailExists == true) {
-                                                $errors = "9";
-                                                return view('signup', ['errors' => $errors]);
-                                            }
-                
-                                            if($emailExists == false && $emailExists == false) {
+                                            if($loginExists == false) {
                                                 //encryption
                                                 //$encryptedPassword = Crypt::encrypt($password);
                 
@@ -140,7 +124,6 @@ class AuthController extends Controller
                                                 $image -> move($imageFolder, $imageName);
                                                 $newUser -> login = $login;
                                                 $newUser -> password = $password;
-                                                $newUser -> email = $email;
                                                 $newUser -> photo = $imageName;
                                                 $newUser -> role = 'user';
                                                 $newUser -> save();
@@ -167,11 +150,6 @@ class AuthController extends Controller
                             $errors = "1";
                             return view('signup', ['errors' => $errors]);
                         }
-                    }
-                    else {
-                        $errors = "13";
-                        return view('signup', ['errors' => $errors]);
-                    }
                 }
                 else {
                     $errors = "12";
@@ -212,7 +190,6 @@ class AuthController extends Controller
                 $isLogged = true;
                 $req->session()->put('id', $id);
                 $req->session()->put('login', $user->login);
-                $req->session()->put('email', $user->email);
                 $req->session()->put('role', $status);
                 $req->session()->put('photo', $photo);
                 $req->session()->put('ban_until', $ban_until);

@@ -30,10 +30,6 @@
                     <input type="password" class="form-control" id="floatingPassword" placeholder="Retype the password" name="passwordVerification">
                     <label for="floatingPassword">Retype the password</label>
                 </div>
-                <div class="form-floating">
-                    <input type="email" class="form-control" id="floatingEmail" placeholder="Enter your email" name="email">
-                    <label for="floatingPassword">Enter your email</label>
-                </div>
                 <input type="file" class="form-control" id="inputGroupFile02" name="image">
                              
                 <button class="w-100 btn btn-lg btn-primary" type="submit">Sign up</button>
@@ -42,10 +38,10 @@
                         <p class="mt-3 mb-3 text-muted">no image detected</p>
                         @break
                     @case("2")
-                        <p class="mt-3 mb-3 text-muted">invalid image extension </p>
+                        <p class="mt-3 mb-3 text-muted">only image extensions supported: .jpeg, .jpg</p>
                         @break
                     @case("3")
-                        <p class="mt-3 mb-3 text-muted">password length too short</p>
+                        <p class="mt-3 mb-3 text-muted">password must be at least 8 characters long</p>
                         @break
                     @case("4")
                         <p class="mt-3 mb-3 text-muted">password lacks capital letters</p>
@@ -57,7 +53,7 @@
                         <p class="mt-3 mb-3 text-muted">password lacks symbols</p>
                         @break
                     @case("7")
-                        <p class="mt-3 mb-3 text-muted">passwords dont match when retyping</p>
+                        <p class="mt-3 mb-3 text-muted">passwords don't match when retyping</p>
                         @break
                     @case("8")
                         <p class="mt-3 mb-3 text-muted">login already exists</p> 

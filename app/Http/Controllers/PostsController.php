@@ -62,7 +62,7 @@ class PostsController extends Controller
 
     public function show_threads() {
         $users = Utilizator::all();
-        $posts = Articol::paginate(5);
+        $posts = Articol::paginate(5, ['*'], 'allposts');
         $nrComments = DB::table('comments')->join('articols', 'comments.articol_id', '=', 'articols.id')->select(DB::raw('articols.id as aid, count(*) as cnr'))->groupBy('articols.id')->get();
         $nrReplies = DB::table('replies')->join('articols', 'replies.articol_id', '=', 'articols.id')->select(DB::raw('articols.id as aid, count(*) as rnr'))->groupBy('articols.id')->get();
         $nrPosts = DB::table('articols')->select(DB::raw('count(*) as pnr'))->get();
@@ -70,7 +70,8 @@ class PostsController extends Controller
         $notifications = Notification::where('recipient_id', '=', $idd)->orderBy('id', 'desc')->get();
         $notificationsNumber = DB::table('notifications')->select(DB::raw('count(*) as nnr'))->where([['recipient_id', '=', $idd], ['was_seen', '=', 0]])->get();
 
-        return view('index', ['posts' => $posts, 'nrComments' => $nrComments, 'nrReplies' => $nrReplies, 'nrPosts' => $nrPosts, 'notifications' => $notifications, 'id' => $idd, 'notificationsNumber' => $notificationsNumber, 'users' => $users]);
+        return view('index', ['posts' => $posts, 'nrComments' => $nrComments, 'nrReplies' => $nrReplies, 'nrPosts' => $nrPosts, 'notifications' => $notifications, 'id' => $idd, 
+                    'notificationsNumber' => $notificationsNumber, 'users' => $users]);
     }
 
     public function show_thread($id) {
@@ -87,14 +88,21 @@ class PostsController extends Controller
         if(session('ban_until') !== null) {
             $now = Carbon::now();
             $ban = Carbon::parse(session('ban_until'));
-            $result = $ban->lt($now);
+            $resultt = $ban->lt($now);
+            if($resultt == true) {
+                $result = 1;
+            }
+            else {
+                $result = 0;
+            }
         }
         else {
             $result = 1;
         }
+        session()->put('result', $result);
         
-        
-        return view('articol', ['post' => $post, 'users' => $users, 'comments' => $comments, 'replies' => $replies, 'nrComments' => $nrComments, 'nrReplies' => $nrReplies, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
+        return view('articol', ['post' => $post, 'users' => $users, 'comments' => $comments, 'replies' => $replies, 'nrComments' => $nrComments, 'nrReplies' => $nrReplies, 'notifications' => $notifications, 
+        'notificationsNumber' => $notificationsNumber, 'result' => $result]);
     }
 
     public function show_create_thread() {
@@ -122,6 +130,19 @@ class PostsController extends Controller
         $author = $req -> author;
         $errors = '';
         $id = self::generateId();
+
+        $idd = session('id');
+        $notifications = Notification::where('recipient_id', '=', $idd)->orderBy('id', 'desc')->get();
+        $notificationsNumber = DB::table('notifications')->select(DB::raw('count(*) as nnr'))->where([['recipient_id', '=', $idd], ['was_seen', '=', 0]])->get();
+        $result = 0;
+        if(session('ban_until') !== null) {
+            $now = Carbon::now();
+            $ban = Carbon::parse(session('ban_until'));
+            $result = $ban->lt($now);
+        }
+        else {
+            $result = 1;
+        }
 
         if($title != '') {
             if($content != '') {
@@ -158,22 +179,22 @@ class PostsController extends Controller
                     }
                     else {
                         $errors = '2';
-                        return view('createArticol', ['errors' => $errors]);
+                        return view('createArticol', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
                     }
                 }
                 else {
                     $errors = '1';
-                    return view('createArticol', ['errors' => $errors]);
+                    return view('createArticol', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
                 }
             }
             else {
                 $errors = '15';
-                return view('createArticol', ['errors' => $errors]);
+                return view('createArticol', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
             }
         }
         else {
             $errors = '14';
-            return view('createArticol', ['errors' => $errors]);
+            return view('createArticol', ['errors' => $errors, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
         }
 
         return redirect('/thread/' . $id);
@@ -198,6 +219,7 @@ class PostsController extends Controller
         $newComment -> content = $content;
         $newComment -> upload_date = $upload_date;
         $newComment -> user_id = $user_id;
+        $newComment -> edited = 0;
         $newComment -> save();
 
         if($post_user_id != session('id')) {
@@ -238,6 +260,7 @@ class PostsController extends Controller
         $newReply -> content = $content;
         $newReply -> upload_date = $upload_date;
         $newReply -> user_id = $user_id;
+        $newReply -> edited = 0;
         $newReply -> save();
 
         if($recipient_id != session('id')) {
@@ -280,6 +303,7 @@ class PostsController extends Controller
         $newSecondaryReply -> author = $author;
         $newSecondaryReply -> recipient = $recipient;
         $newSecondaryReply -> mainReply_id = $mainReply_id;
+        $newSecondaryReply -> edited = 0;
         $newSecondaryReply -> save();
 
         if($recipient_id != session('id')) {
@@ -347,6 +371,32 @@ class PostsController extends Controller
         return redirect('/');
     }
 
+    public function change_post_photo(Request $req) {
+        $id = $req->post_id;
+        $thread = Articol::findOrFail($id);   
+
+        if($req->hasFile('image')) { 
+            $image = $req -> file('image');
+            $imageExtension = $image -> getClientOriginalExtension();
+            if($imageExtension == 'jpeg' || $imageExtension == 'jpg') {
+                unlink(public_path('posts_images/' . $thread->photo));
+                $imageName = uniqid() . "." . $imageExtension;
+                $imageFolder = public_path('posts_images/');
+                $image -> move($imageFolder, $imageName);
+                $thread -> photo = $imageName;
+                $thread -> save();
+            }
+            else {
+                return redirect('/thread/' . $id);
+            }
+        }
+        else {
+            return redirect('/thread/' . $id);
+        }
+
+        return redirect('/thread/' . $id);
+    }
+
     public function update_thread(Request $req) {
         $id = $req->thread_id;
         $thread = Articol::findOrFail($id);
@@ -356,44 +406,38 @@ class PostsController extends Controller
         $author = $req -> author;
         $errors = '';
 
+        $idd = session('id');
+        $notifications = Notification::where('recipient_id', '=', $idd)->orderBy('id', 'desc')->get();
+        $notificationsNumber = DB::table('notifications')->select(DB::raw('count(*) as nnr'))->where([['recipient_id', '=', $idd], ['was_seen', '=', 0]])->get();
+        $result = 0;
+        if(session('ban_until') !== null) {
+            $now = Carbon::now();
+            $ban = Carbon::parse(session('ban_until'));
+            $result = $ban->lt($now);
+        }
+        else {
+            $result = 1;
+        }
+
         if($title != '') {
             if($content != '') {
-                if($req->hasFile('image')) {
-                    $image = $req -> file('image');
-                    $imageExtension = $image -> getClientOriginalExtension();
-                    if($imageExtension == 'jpeg' || $imageExtension == 'jpg') {
-                        unlink(public_path('posts_images/' . $thread->photo));
-                        $imageName = uniqid() . "." . $imageExtension;
-                        $imageFolder = public_path('posts_images/');
-                        $image -> move($imageFolder, $imageName);
                         $thread -> id = $id;
                         $thread -> utilizators_id = session('id');
                         $thread -> title = $title;                       
                         $thread -> content = $content;
-                        $thread -> photo = $imageName;
                         $thread -> author = $author;
                         $date = Carbon::now();
                         $thread -> upload_date = $date; 
                         $thread -> save();
-                    }
-                    else {
-                        $errors = '2';
-                        return view('updateArticol', ['errors' => $errors, 'thread' => $thread]);
-                    }
-                }
-                else {
-                    $errors = '1';
-                    return view('updateArticol', ['errors' => $errors, 'thread' => $thread]);
-                }
             }
             else {
                 $errors = '15';
-                return view('updateArticol', ['errors' => $errors, 'thread' => $thread]);
+                return view('updateArticol', ['errors' => $errors, 'thread' => $thread, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
             }
         }
         else {
             $errors = '14';
-            return view('updateArticol', ['errors' => $errors, 'thread' => $thread]);
+            return view('updateArticol', ['errors' => $errors, 'thread' => $thread, 'notifications' => $notifications, 'notificationsNumber' => $notificationsNumber, 'result' => $result]);
         }
 
         return redirect('/thread/' . $id);
@@ -437,10 +481,8 @@ class PostsController extends Controller
 
     public function del($id) {
         $moreReplies = Reply::where('mainReply_id', '=', $id)->get();
-
         return $moreReplies;
     }
-
     public function delete_reply(Request $req) {
         $user_id = $req->user_id;
         $reply_id = $req->reply_id;
@@ -496,7 +538,6 @@ class PostsController extends Controller
                 }
             }
         }
-
         return redirect('/thread/' . $articol_id);
     }
 
@@ -732,7 +773,11 @@ class PostsController extends Controller
         $commentts = Comment::where('author', 'like', $author);
         $commentts->delete();
 
-        return self::show_thread($articol_id);
+        if(Articol::where('id', '=', $articol_id)->exists()) {
+            return self::show_thread($articol_id);
+        }
+        
+        return redirect('/');
     }
 
     public function ban_post1(Request $req) {
@@ -999,6 +1044,36 @@ class PostsController extends Controller
                 break;
         }
 
-        return self::show_thread($articol_id);
+        if(Articol::where('id', '=', $articol_id)->exists()) {
+            return self::show_thread($articol_id);
+        }
+
+        return redirect('/');
+    }
+
+    public function edit_reply(Request $req) {
+        $reply_id = $req->reply_id;
+        $post_id = $req->post_id;
+        $content = $req->content;
+
+        $reply = Reply::findOrFail($reply_id);
+        $reply->content = $content;
+        $reply->edited = 1;
+        $reply->save();
+
+        return redirect('/thread/' . $post_id . '#' . $reply_id);
+    }
+
+    public function edit_comment(Request $req) {
+        $comment_id = $req->comment_id;
+        $articol_id = $req->articol_id;
+        $content = $req->content;
+
+        $comment = Comment::findOrFail($comment_id);
+        $comment->content = $content;
+        $comment->edited = 1;
+        $comment->save();
+
+        return redirect('/thread/' . $articol_id . '#' . $comment_id);
     }
 }

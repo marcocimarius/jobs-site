@@ -59,51 +59,70 @@
 
                     <div class="notification_dd" >
                         <ul class="notification_ul">
-                            @foreach ($notifications as $notification)
-                                <li>
-                                    <div class="notify_icon">
-                                        <span class="iconn">
-                                            @if (isset($notification->comment_id))
-                                                <a href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
-                                                    <img src="{{url('/images/' . $notification->image)}}" alt="profile_pic">
-                                                </a>  
-                                            @endif
-                                            @if (isset($notification->reply_id))
-                                                <a href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
-                                                    <img src="{{url('/images/' . $notification->image)}}" alt="profile_pic">
-                                                </a> 
-                                            @endif    
-                                        </span>
-                                    </div>
-                                    
-                                    <div class="notify_data">
-                                        <div class="title">
-                                            @if (isset($notification->comment_id))
-                                                <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
-                                                    <p class="text-dark">{{$notification->title}}</p>
-                                                </a>
-                                            @endif 
-                                            @if (isset($notification->reply_id))
-                                                <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
-                                                    <p class="text-dark">{{$notification->title}}</p>
-                                                </a>
-                                            @endif        
+                            @if ($notifications -> isNotEmpty())
+                                @foreach ($notifications as $notification)
+                                    <li>
+                                        <div class="notify_icon">
+                                            <span class="iconn">
+                                                @if (isset($notification->comment_id))
+                                                    <a href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
+                                                    </a>  
+                                                @endif
+                                                @if (isset($notification->reply_id))
+                                                    <a href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
+                                                    </a> 
+                                                @endif  
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a href="/thread/{{$notification->post_id}}">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
+                                                    </a>
+                                                @endif  
+                                            </span>
                                         </div>
-                                        <div class="sub_title">
-                                            @if (isset($notification->comment_id))
-                                                <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
-                                                    <p class="text-muted">{{$notification->creation_date}}</p>
-                                                </a>  
-                                            @endif 
-                                            @if (isset($notification->reply_id))
-                                                <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
-                                                    <p class="text-muted">{{$notification->creation_date}}</p>
-                                                </a> 
-                                            @endif 
+                                        
+                                        <div class="notify_data">
+                                            <div class="title">
+                                                @if (isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
+                                                        <p class="text-dark">{{$notification->title}}</p>
+                                                    </a>
+                                                @endif 
+                                                @if (isset($notification->reply_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
+                                                        <p class="text-dark">{{$notification->title}}</p>
+                                                    </a>
+                                                @endif        
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}">
+                                                        <p class="text-dark">{{$notification->title}}</p>
+                                                    </a>
+                                                @endif 
+                                            </div>
+                                            <div class="sub_title">
+                                                @if (isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
+                                                        <p class="text-muted">{{$notification->creation_date}}</p>
+                                                    </a>  
+                                                @endif 
+                                                @if (isset($notification->reply_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
+                                                        <p class="text-muted">{{$notification->creation_date}}</p>
+                                                    </a> 
+                                                @endif 
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}">
+                                                        <p class="text-muted">{{$notification->creation_date}}</p>
+                                                    </a> 
+                                                @endif 
+                                            </div>
                                         </div>
-                                    </div>
-                                </li>
-                            @endforeach          
+                                    </li>
+                                @endforeach  
+                            @else
+                                <p class="text-dark fs-2 fw-bold mt-5">You have no notifications yet</p>
+                            @endif                          
                         </ul>
                     </div>
                 </div>
@@ -165,10 +184,10 @@
                         Please provide a valid title
                     </div>
                 </div>
-                <div class=" mb-3">
+                {{-- <div class=" mb-3">
                     <h3>Upload a photo for your post</h3>
                     <input type="file" class="form-control" name="image">
-                </div>
+                </div> --}}
                 <button type="submit" class="w-100 btn btn-lg btn-primary" name="submit">Update</button>
                 @switch($errors)
                     @case("1")

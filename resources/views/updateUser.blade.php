@@ -66,14 +66,19 @@
                                             <span class="iconn">
                                                 @if (isset($notification->comment_id))
                                                     <a href="/thread/{{$notification->post_id}}#{{$notification->comment_id}}">
-                                                        <img src="{{url('/images/' . $notification->image)}}" alt="profile_pic">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
                                                     </a>  
                                                 @endif
                                                 @if (isset($notification->reply_id))
                                                     <a href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
-                                                        <img src="{{url('/images/' . $notification->image)}}" alt="profile_pic">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
                                                     </a> 
-                                                @endif    
+                                                @endif  
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a href="/thread/{{$notification->post_id}}">
+                                                        <img src="{{url('/images/' . $notification->image)}}" alt="notification_picture">
+                                                    </a>
+                                                @endif  
                                             </span>
                                         </div>
                                         
@@ -89,6 +94,11 @@
                                                         <p class="text-dark">{{$notification->title}}</p>
                                                     </a>
                                                 @endif        
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}">
+                                                        <p class="text-dark">{{$notification->title}}</p>
+                                                    </a>
+                                                @endif 
                                             </div>
                                             <div class="sub_title">
                                                 @if (isset($notification->comment_id))
@@ -98,6 +108,11 @@
                                                 @endif 
                                                 @if (isset($notification->reply_id))
                                                     <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}#{{$notification->reply_id}}">
+                                                        <p class="text-muted">{{$notification->creation_date}}</p>
+                                                    </a> 
+                                                @endif 
+                                                @if (!isset($notification->reply_id) && !isset($notification->comment_id))
+                                                    <a style="text-decoration: none;" href="/thread/{{$notification->post_id}}">
                                                         <p class="text-muted">{{$notification->creation_date}}</p>
                                                     </a> 
                                                 @endif 
@@ -165,14 +180,14 @@
                 <label for="exampleFormControlInput3" class="form-label fs-5">Confirm your password</label>
                 <input type="password" class="form-control" id="exampleFormControlInput3" placeholder="Confirm your password" name="passwordVerification">
             </div>
-            <div class="mb-3">
+            {{-- <div class="mb-3">
                 <label for="exampleFormControlInput4" class="form-label fs-5">Email address</label>
                 <input type="email" class="form-control" id="exampleFormControlInput4" placeholder="Enter your email" name="email" value="{{session('email')}}">
-            </div>
-            <div class="mb-3">
+            </div> --}}
+            {{-- <div class="mb-3">
                 <label for="inputGroupFile02" class="form-label fs-5">Choose a profile picture</label>
                 <input type="file" class="form-control" id="inputGroupFile02" name="image">
-            </div>
+            </div> --}}
             <button type="submit" class="w-100 btn btn-lg btn-primary" name="submit">Update</button>
             @switch($errors)
                 @case("1")
